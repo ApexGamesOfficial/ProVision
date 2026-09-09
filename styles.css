@@ -33,6 +33,7 @@
 }
 
 
+
 /* =========================================================
    BASE
    ========================================================= */
@@ -103,6 +104,7 @@ button {
 }
 
 
+
 /* =========================================================
    TYPOGRAPHY
    ========================================================= */
@@ -124,6 +126,7 @@ button {
 .eyebrow-dark {
   color: var(--cyan-600);
 }
+
 
 
 /* =========================================================
@@ -203,6 +206,7 @@ button {
 }
 
 
+
 /* =========================================================
    HEADER
    ========================================================= */
@@ -240,6 +244,7 @@ button {
 }
 
 
+
 /* BRAND */
 
 .brand {
@@ -248,71 +253,23 @@ button {
   width: fit-content;
 
   align-items: center;
-
-  gap: 11px;
-
-  font-weight: 800;
 }
 
 
-.brand-mark {
-  position: relative;
+.brand-logo {
+  display: block;
 
-  display: inline-flex;
+  width: 138px;
+  height: auto;
 
-  width: 28px;
-  height: 28px;
-
-  align-items: center;
-  justify-content: center;
-
-  border:
-    2px solid var(--cyan-500);
-
-  border-radius: 50%;
+  object-fit: contain;
 }
 
 
-.brand-mark::before,
-.brand-mark::after,
-.brand-mark span {
-  content: "";
-
-  position: absolute;
-
-  background: var(--cyan-500);
+.brand-logo-footer {
+  width: 150px;
 }
 
-
-.brand-mark::before {
-  width: 2px;
-  height: 12px;
-
-  transform: rotate(45deg);
-}
-
-
-.brand-mark::after {
-  width: 2px;
-  height: 12px;
-
-  transform: rotate(-45deg);
-}
-
-
-.brand-mark span {
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-}
-
-
-.brand-name {
-  font-size: 1rem;
-
-  letter-spacing: -0.02em;
-}
 
 
 /* NAVIGATION */
@@ -352,6 +309,7 @@ button {
 
   gap: 20px;
 }
+
 
 
 /* MOBILE MENU */
@@ -410,6 +368,7 @@ span:last-child {
   transform:
     rotate(-45deg);
 }
+
 
 
 /* =========================================================
@@ -496,6 +455,7 @@ span:last-child {
 }
 
 
+
 /* =========================================================
    HERO PRODUCT PREVIEW
    ========================================================= */
@@ -545,6 +505,7 @@ span:last-child {
 }
 
 
+
 /* TOPBAR */
 
 .stage-topbar {
@@ -568,22 +529,30 @@ span:last-child {
   display: inline-flex;
 
   align-items: center;
-
-  gap: 9px;
-
-  font-size: 0.78rem;
-  font-weight: 800;
 }
 
 
-.mini-mark {
-  width: 10px;
-  height: 10px;
+.stage-logo-background {
+  display: inline-flex;
 
-  border:
-    2px solid var(--cyan-600);
+  align-items: center;
+  justify-content: center;
 
-  border-radius: 50%;
+  border-radius: 5px;
+
+  padding: 5px 8px;
+
+  background: var(--navy-900);
+}
+
+
+.stage-logo {
+  display: block;
+
+  width: 82px;
+  height: auto;
+
+  object-fit: contain;
 }
 
 
@@ -593,6 +562,7 @@ span:last-child {
   font-size: 0.68rem;
   font-weight: 600;
 }
+
 
 
 /* BODY */
@@ -606,6 +576,7 @@ span:last-child {
     150px
     1fr;
 }
+
 
 
 /* SIDEBAR */
@@ -660,6 +631,7 @@ span:last-child {
 
   color: var(--ink-900);
 }
+
 
 
 /* CONTENT */
@@ -784,6 +756,7 @@ span:last-child {
 }
 
 
+
 /* FAKE DOCUMENT */
 
 .document-lines {
@@ -823,6 +796,7 @@ span:last-child {
 }
 
 
+
 /* HERO SCROLL */
 
 .hero-scroll {
@@ -847,6 +821,7 @@ span:last-child {
 .scroll-arrow {
   color: var(--cyan-500);
 }
+
 
 
 /* =========================================================
@@ -911,6 +886,7 @@ span:last-child {
 
   line-height: 1.75;
 }
+
 
 
 /* PRODUCT GRID */
@@ -982,6 +958,7 @@ span:last-child {
 }
 
 
+
 /* ICON */
 
 .product-icon {
@@ -1009,6 +986,7 @@ span:last-child {
 
   color: var(--navy-900);
 }
+
 
 
 /* CARD COPY */
@@ -1077,6 +1055,7 @@ span:last-child {
 }
 
 
+
 /* CARD LINK */
 
 .card-link {
@@ -1104,6 +1083,7 @@ span:last-child {
 }
 
 
+
 /* STATUS */
 
 .status-pill {
@@ -1123,6 +1103,7 @@ span:last-child {
   font-size: 0.66rem;
   font-weight: 700;
 }
+
 
 
 /* =========================================================
@@ -1173,6 +1154,7 @@ span:last-child {
 
   line-height: 1.75;
 }
+
 
 
 /* CONNECTION PANEL */
@@ -1272,6 +1254,7 @@ span:last-child {
 }
 
 
+
 /* =========================================================
    ABOUT
    ========================================================= */
@@ -1327,6 +1310,7 @@ span:last-child {
 }
 
 
+
 /* =========================================================
    CTA
    ========================================================= */
@@ -1375,6 +1359,7 @@ span:last-child {
 
   line-height: 1;
 }
+
 
 
 /* =========================================================
@@ -1476,6 +1461,7 @@ span:last-child {
 }
 
 
+
 /* =========================================================
    TABLET
    ========================================================= */
@@ -1550,6 +1536,7 @@ span:last-child {
 }
 
 
+
 /* =========================================================
    MOBILE
    ========================================================= */
@@ -1572,6 +1559,11 @@ span:last-child {
 
   .header-inner {
     min-height: 64px;
+  }
+
+
+  .brand-logo {
+    width: 122px;
   }
 
 
@@ -1631,6 +1623,7 @@ span:last-child {
   }
 
 
+
   /* HERO */
 
   .hero-inner {
@@ -1656,6 +1649,7 @@ span:last-child {
   }
 
 
+
   /* PRODUCT PREVIEW */
 
   .stage-body {
@@ -1675,6 +1669,12 @@ span:last-child {
   }
 
 
+  .stage-logo {
+    width: 72px;
+  }
+
+
+
   /* SECTION HEADINGS */
 
   .section-heading-split {
@@ -1689,6 +1689,7 @@ span:last-child {
   .about-section {
     padding: 88px 0;
   }
+
 
 
   /* PRODUCTS */
@@ -1712,6 +1713,7 @@ span:last-child {
   }
 
 
+
   /* CTA */
 
   .cta-section {
@@ -1728,6 +1730,7 @@ span:last-child {
 
     padding: 38px 28px;
   }
+
 
 
   /* FOOTER */
@@ -1754,6 +1757,7 @@ span:last-child {
   }
 
 }
+
 
 
 /* =========================================================
@@ -1789,6 +1793,7 @@ span:last-child {
   }
 
 }
+
 
 
 /* =========================================================
