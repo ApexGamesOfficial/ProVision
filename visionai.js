@@ -215,6 +215,45 @@ function scrollToBottom() {
 
 
 /* =========================================================
+   MARKDOWN
+   ========================================================= */
+
+function renderMarkdown(text) {
+
+  if (
+    typeof window.marked === "undefined" ||
+    typeof window.DOMPurify === "undefined"
+  ) {
+
+    return null;
+
+  }
+
+
+  const rendered =
+    window.marked.parse(
+      text,
+      {
+        gfm: true,
+        breaks: true
+      }
+    );
+
+
+  return window.DOMPurify.sanitize(
+    rendered,
+    {
+      USE_PROFILES: {
+        html: true
+      }
+    }
+  );
+
+}
+
+
+
+/* =========================================================
    CREATE MESSAGE
    ========================================================= */
 
@@ -307,23 +346,45 @@ function addMessage(
   }
 
 
-  const paragraph =
+  const messageText =
     document.createElement(
-      "p"
+      "div"
     );
 
 
-  paragraph.className =
+  messageText.className =
     "message-text";
 
 
-  paragraph.textContent =
-    text;
+  if (role === "assistant") {
+
+    const renderedMarkdown =
+      renderMarkdown(text);
+
+
+    if (renderedMarkdown !== null) {
+
+      messageText.innerHTML =
+        renderedMarkdown;
+
+    } else {
+
+      messageText.textContent =
+        text;
+
+    }
+
+  } else {
+
+    messageText.textContent =
+      text;
+
+  }
 
 
   content.append(
     name,
-    paragraph
+    messageText
   );
 
 
@@ -383,9 +444,9 @@ function addLoadingMessage() {
         VisionAI
       </span>
 
-      <p class="message-text">
+      <div class="message-text">
         Thinking…
-      </p>
+      </div>
 
     </div>
   `;
