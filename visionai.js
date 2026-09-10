@@ -4,17 +4,12 @@
    ========================================================= */
 
 
-/*
-   Backend configuration
+/* =========================================================
+   BACKEND
+   ========================================================= */
 
-   IMPORTANT:
-   Do NOT put a Gemini API key in this file.
-
-   We will point this URL at the Supabase Edge Function
-   after we create the backend.
-*/
-
-const VISIONAI_API_URL = "";
+const VISIONAI_API_URL =
+  "https://bcyxpmzrckjihgtqjqtu.supabase.co/functions/v1/visionai-chat";
 
 
 
@@ -129,13 +124,16 @@ function resizeTextarea() {
     return;
   }
 
-  messageInput.style.height = "auto";
+  messageInput.style.height =
+    "auto";
 
   messageInput.style.height =
-    `${Math.min(messageInput.scrollHeight, 180)}px`;
+    `${Math.min(
+      messageInput.scrollHeight,
+      180
+    )}px`;
 
 }
-
 
 
 messageInput?.addEventListener(
@@ -148,7 +146,8 @@ messageInput?.addEventListener(
       messageInput.value.trim().length > 0;
 
     sendButton.disabled =
-      !hasText || requestInProgress;
+      !hasText ||
+      requestInProgress;
 
   }
 );
@@ -185,12 +184,15 @@ messageInput?.addEventListener(
 
 function showMessages() {
 
-  welcomeScreen?.classList.add("hidden");
+  welcomeScreen?.classList.add(
+    "hidden"
+  );
 
-  messages?.classList.add("active");
+  messages?.classList.add(
+    "active"
+  );
 
 }
-
 
 
 function scrollToBottom() {
@@ -230,7 +232,9 @@ function addMessage(
 
 
   const message =
-    document.createElement("article");
+    document.createElement(
+      "article"
+    );
 
 
   message.className =
@@ -238,7 +242,9 @@ function addMessage(
 
 
   const avatar =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
 
   avatar.className =
@@ -247,21 +253,26 @@ function addMessage(
 
   if (role === "assistant") {
 
-    avatar.textContent = "V";
+    avatar.textContent =
+      "V";
 
   } else if (role === "system") {
 
-    avatar.textContent = "!";
+    avatar.textContent =
+      "!";
 
   } else {
 
-    avatar.textContent = "You";
+    avatar.textContent =
+      "You";
 
   }
 
 
   const content =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
 
   content.className =
@@ -269,7 +280,9 @@ function addMessage(
 
 
   const name =
-    document.createElement("span");
+    document.createElement(
+      "span"
+    );
 
 
   name.className =
@@ -295,7 +308,9 @@ function addMessage(
 
 
   const paragraph =
-    document.createElement("p");
+    document.createElement(
+      "p"
+    );
 
 
   paragraph.className =
@@ -344,7 +359,9 @@ function addLoadingMessage() {
 
 
   const message =
-    document.createElement("article");
+    document.createElement(
+      "article"
+    );
 
 
   message.className =
@@ -361,6 +378,7 @@ function addLoadingMessage() {
     </div>
 
     <div class="message-content">
+
       <span class="message-name">
         VisionAI
       </span>
@@ -368,6 +386,7 @@ function addLoadingMessage() {
       <p class="message-text">
         Thinking…
       </p>
+
     </div>
   `;
 
@@ -406,10 +425,12 @@ async function sendMessage(
   }
 
 
-  requestInProgress = true;
+  requestInProgress =
+    true;
 
 
-  sendButton.disabled = true;
+  sendButton.disabled =
+    true;
 
 
   addMessage(
@@ -424,31 +445,11 @@ async function sendMessage(
   });
 
 
-  messageInput.value = "";
+  messageInput.value =
+    "";
+
 
   resizeTextarea();
-
-
-  /*
-     Until our Supabase backend exists,
-     stop here instead of generating
-     fake AI responses.
-  */
-
-  if (!VISIONAI_API_URL) {
-
-    addMessage(
-      "system",
-      "VisionAI's backend is not connected yet. The interface is ready — connect the ProVision AI service to begin generating responses."
-    );
-
-
-    requestInProgress = false;
-
-    sendButton.disabled = true;
-
-    return;
-  }
 
 
   const loadingMessage =
@@ -477,23 +478,44 @@ async function sendMessage(
       );
 
 
-    if (!response.ok) {
+    let data;
+
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
 
       throw new Error(
-        `VisionAI request failed: ${response.status}`
+        `VisionAI backend returned an invalid response. HTTP ${response.status}`
       );
 
     }
 
 
-    const data =
-      await response.json();
+    if (!response.ok) {
+
+      console.error(
+        "VisionAI backend error:",
+        data
+      );
+
+
+      throw new Error(
+        data?.error ||
+        data?.message ||
+        `Request failed with HTTP ${response.status}`
+      );
+
+    }
 
 
     const assistantText =
-      data.reply ||
-      data.message ||
-      data.text;
+      data?.reply ||
+      data?.message ||
+      data?.text;
 
 
     if (!assistantText) {
@@ -530,14 +552,21 @@ async function sendMessage(
     loadingMessage?.remove();
 
 
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unknown error";
+
+
     addMessage(
       "system",
-      "VisionAI couldn't complete that request. Please try again."
+      `VisionAI couldn't complete that request. ${errorMessage}`
     );
 
   } finally {
 
-    requestInProgress = false;
+    requestInProgress =
+      false;
 
 
     sendButton.disabled =
@@ -581,7 +610,8 @@ starterCards.forEach(
       () => {
 
         const prompt =
-          card.dataset.prompt || "";
+          card.dataset.prompt ||
+          "";
 
 
         messageInput.value =
@@ -611,10 +641,12 @@ starterCards.forEach(
 
 function startNewChat() {
 
-  conversation = [];
+  conversation =
+    [];
 
 
-  messages.innerHTML = "";
+  messages.innerHTML =
+    "";
 
 
   messages.classList.remove(
@@ -627,25 +659,27 @@ function startNewChat() {
   );
 
 
-  messageInput.value = "";
+  messageInput.value =
+    "";
 
 
   resizeTextarea();
 
 
-  sendButton.disabled = true;
+  sendButton.disabled =
+    true;
 
 
   closeSidebar();
 
 
-  chatArea.scrollTop = 0;
+  chatArea.scrollTop =
+    0;
 
 
   messageInput.focus();
 
 }
-
 
 
 newChatButton?.addEventListener(
@@ -660,7 +694,9 @@ newChatButton?.addEventListener(
    ========================================================= */
 
 document
-  .querySelectorAll(".sidebar-link")
+  .querySelectorAll(
+    ".sidebar-link"
+  )
   .forEach(
     (button) => {
 
@@ -692,7 +728,9 @@ document
             button.dataset.section;
 
 
-          if (section !== "chat") {
+          if (
+            section !== "chat"
+          ) {
 
             console.log(
               `${section} is planned for a future VisionAI update.`
