@@ -3,105 +3,814 @@
    ProVision
    ========================================================= */
 
-:root {
-  --navy-950: #06131f;
-  --navy-900: #081826;
-  --navy-850: #0b1e2f;
-  --navy-800: #10283c;
 
-  --cyan-500: #20c7d9;
-  --cyan-600: #12afc3;
-  --cyan-100: #dffbff;
+/* =========================================================
+   BACKEND
+   ========================================================= */
 
-  --white: #ffffff;
-  --off-white: #f6f8fa;
+const VISIONAI_API_URL =
+  "https://bcyxpmzrckjihgtqjqtu.supabase.co/functions/v1/visionai-chat";
 
-  --ink-900: #0b1720;
-  --ink-700: #344550;
-  --ink-500: #667781;
 
-  --border: #dfe6ea;
+/* =========================================================
+   STORAGE
+   ========================================================= */
 
-  --sidebar-width: 260px;
-  --topbar-height: 68px;
+const CHAT_STORAGE_KEY =
+  "provisionVisionAIChats";
 
-  --transition: 160ms ease;
-}
+const CURRENT_CHAT_STORAGE_KEY =
+  "provisionVisionAICurrentChatId";
+
+
+/*
+  This storage layer is intentionally kept separate from
+  the rest of the app.
+
+  Later, when ProVision Accounts are added, these functions
+  can be replaced with Supabase calls without rebuilding
+  the entire History interface.
+*/
+
+const chatStorage = {
+
+  loadChats() {
+
+    try {
+
+      const stored =
+        localStorage.getItem(
+          CHAT_STORAGE_KEY
+        );
+
+
+      if (!stored) {
+        return [];
+      }
+
+
+      const parsed =
+        JSON.parse(stored);
+
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+
+      return parsed
+        .filter(
+          (chat) =>
+            chat &&
+            typeof chat === "object" &&
+            typeof chat.id === "string"
+        )
+        .map(
+          normalizeStoredChat
+        );
+
+    } catch (error) {
+
+      console.error(
+        "VisionAI could not load chat history:",
+        error
+      );
+
+      return [];
+
+    }
+
+  },
+
+
+  saveChats(chatsToSave) {
+
+    try {
+
+      localStorage.setItem(
+        CHAT_STORAGE_KEY,
+        JSON.stringify(
+          chatsToSave
+        )
+      );
+
+    } catch (error) {
+
+      console.error(
+        "VisionAI could not save chat history:",
+        error
+      );
+
+    }
+
+  },
+
+
+  loadCurrentChatId() {
+
+    try {
+
+      return (
+        localStorage.getItem(
+          CURRENT_CHAT_STORAGE_KEY
+        ) || null
+      );
+
+    } catch {
+
+      return null;
+
+    }
+
+  },
+
+
+  saveCurrentChatId(chatId) {
+
+    try {
+
+      if (chatId) {
+
+        localStorage.setItem(
+          CURRENT_CHAT_STORAGE_KEY,
+          chatId
+        );
+
+      } else {
+
+        localStorage.removeItem(
+          CURRENT_CHAT_STORAGE_KEY
+        );
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "VisionAI could not save the current chat:",
+        error
+      );
+
+    }
+
+  }
+
+};
 
 
 
 /* =========================================================
-   BASE
+   ELEMENTS
    ========================================================= */
 
-* {
-  box-sizing: border-box;
-}
+const sidebar =
+  document.getElementById(
+    "sidebar"
+  );
 
+const sidebarOverlay =
+  document.getElementById(
+    "sidebarOverlay"
+  );
 
-html,
-body {
-  width: 100%;
-  min-height: 100%;
-}
+const mobileMenuButton =
+  document.getElementById(
+    "mobileMenuButton"
+  );
 
+const sidebarClose =
+  document.getElementById(
+    "sidebarClose"
+  );
 
-html {
-  background: var(--off-white);
-}
+const newChatButton =
+  document.getElementById(
+    "newChatButton"
+  );
 
+const historyNewChatButton =
+  document.getElementById(
+    "historyNewChatButton"
+  );
 
-body {
-  margin: 0;
+const historyEmptyButton =
+  document.getElementById(
+    "historyEmptyButton"
+  );
 
-  overflow: hidden;
+const welcomeScreen =
+  document.getElementById(
+    "welcomeScreen"
+  );
 
-  background: var(--off-white);
+const messages =
+  document.getElementById(
+    "messages"
+  );
 
-  color: var(--ink-900);
+const chatArea =
+  document.getElementById(
+    "chatArea"
+  );
 
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+const chatView =
+  document.getElementById(
+    "chatView"
+  );
 
-  -webkit-font-smoothing: antialiased;
-}
+const historyScreen =
+  document.getElementById(
+    "historyScreen"
+  );
 
+const historyList =
+  document.getElementById(
+    "historyList"
+  );
 
-button,
-textarea {
-  font: inherit;
-}
+const historyEmpty =
+  document.getElementById(
+    "historyEmpty"
+  );
 
+const composerArea =
+  document.getElementById(
+    "composerArea"
+  );
 
-button {
-  -webkit-tap-highlight-color: transparent;
-}
+const chatForm =
+  document.getElementById(
+    "chatForm"
+  );
 
+const messageInput =
+  document.getElementById(
+    "messageInput"
+  );
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+const sendButton =
+  document.getElementById(
+    "sendButton"
+  );
+
+const starterCards =
+  document.querySelectorAll(
+    ".starter-card"
+  );
+
+const sidebarLinks =
+  document.querySelectorAll(
+    ".sidebar-link"
+  );
 
 
 
 /* =========================================================
-   APP
+   STATE
    ========================================================= */
 
-.app-shell {
-  display: grid;
+let chats =
+  chatStorage.loadChats();
 
-  width: 100vw;
-  height: 100vh;
+let currentChatId =
+  chatStorage.loadCurrentChatId();
 
-  grid-template-columns:
-    var(--sidebar-width)
-    minmax(0, 1fr);
+let conversation =
+  [];
+
+let requestInProgress =
+  false;
+
+
+
+/* =========================================================
+   CHAT DATA HELPERS
+   ========================================================= */
+
+function normalizeStoredChat(chat) {
+
+  const now =
+    new Date().toISOString();
+
+
+  const normalizedMessages =
+    Array.isArray(chat.messages)
+      ? chat.messages
+          .filter(
+            (message) =>
+              message &&
+              typeof message === "object" &&
+              typeof message.content === "string" &&
+              [
+                "user",
+                "assistant",
+                "system"
+              ].includes(
+                message.role
+              )
+          )
+          .map(
+            (message) => ({
+              role: message.role,
+              content:
+                message.content,
+              createdAt:
+                message.createdAt ||
+                now
+            })
+          )
+      : [];
+
+
+  return {
+    id:
+      String(chat.id),
+
+    title:
+      typeof chat.title === "string" &&
+      chat.title.trim()
+        ? chat.title.trim()
+        : "New conversation",
+
+    createdAt:
+      chat.createdAt ||
+      now,
+
+    updatedAt:
+      chat.updatedAt ||
+      chat.createdAt ||
+      now,
+
+    messages:
+      normalizedMessages
+  };
+
+}
+
+
+
+function createId() {
+
+  if (
+    window.crypto &&
+    typeof window.crypto.randomUUID ===
+      "function"
+  ) {
+
+    return window.crypto.randomUUID();
+
+  }
+
+
+  return (
+    "chat-" +
+    Date.now().toString(36) +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2, 10)
+  );
+
+}
+
+
+
+function createChat(
+  firstMessage = ""
+) {
+
+  const now =
+    new Date().toISOString();
+
+
+  const chat = {
+
+    id:
+      createId(),
+
+    title:
+      createChatTitle(
+        firstMessage
+      ),
+
+    createdAt:
+      now,
+
+    updatedAt:
+      now,
+
+    messages:
+      []
+
+  };
+
+
+  chats.unshift(
+    chat
+  );
+
+
+  currentChatId =
+    chat.id;
+
+
+  saveChats();
+
+
+  return chat;
+
+}
+
+
+
+function createChatTitle(text) {
+
+  const cleanText =
+    text
+      .replace(/\s+/g, " ")
+      .trim();
+
+
+  if (!cleanText) {
+
+    return "New conversation";
+
+  }
+
+
+  const maximumLength =
+    52;
+
+
+  if (
+    cleanText.length <=
+    maximumLength
+  ) {
+
+    return cleanText;
+
+  }
+
+
+  return (
+    cleanText
+      .slice(
+        0,
+        maximumLength
+      )
+      .trimEnd() +
+    "…"
+  );
+
+}
+
+
+
+function getChatById(
+  chatId
+) {
+
+  return (
+    chats.find(
+      (chat) =>
+        chat.id === chatId
+    ) || null
+  );
+
+}
+
+
+
+function getCurrentChat() {
+
+  if (!currentChatId) {
+
+    return null;
+
+  }
+
+
+  return getChatById(
+    currentChatId
+  );
+
+}
+
+
+
+function ensureCurrentChat(
+  firstMessage = ""
+) {
+
+  let chat =
+    getCurrentChat();
+
+
+  if (!chat) {
+
+    chat =
+      createChat(
+        firstMessage
+      );
+
+  }
+
+
+  return chat;
+
+}
+
+
+
+function saveChats() {
+
+  chats.sort(
+    (a, b) =>
+      new Date(
+        b.updatedAt
+      ).getTime() -
+      new Date(
+        a.updatedAt
+      ).getTime()
+  );
+
+
+  chatStorage.saveChats(
+    chats
+  );
+
+
+  chatStorage.saveCurrentChatId(
+    currentChatId
+  );
+
+}
+
+
+
+function addStoredMessage(
+  role,
+  content
+) {
+
+  const chat =
+    ensureCurrentChat(
+      role === "user"
+        ? content
+        : ""
+    );
+
+
+  const now =
+    new Date().toISOString();
+
+
+  chat.messages.push({
+
+    role,
+
+    content,
+
+    createdAt:
+      now
+
+  });
+
+
+  if (
+    role === "user" &&
+    (
+      !chat.title ||
+      chat.title ===
+        "New conversation"
+    )
+  ) {
+
+    chat.title =
+      createChatTitle(
+        content
+      );
+
+  }
+
+
+  chat.updatedAt =
+    now;
+
+
+  currentChatId =
+    chat.id;
+
+
+  saveChats();
+
+
+  return chat;
+
+}
+
+
+
+function syncConversationFromChat(
+  chat
+) {
+
+  if (!chat) {
+
+    conversation =
+      [];
+
+    return;
+
+  }
+
+
+  conversation =
+    chat.messages
+      .filter(
+        (message) =>
+          message.role === "user" ||
+          message.role === "assistant"
+      )
+      .map(
+        (message) => ({
+          role:
+            message.role,
+
+          content:
+            message.content
+        })
+      );
+
+}
+
+
+
+function getChatPreview(
+  chat
+) {
+
+  if (
+    !chat ||
+    !Array.isArray(
+      chat.messages
+    ) ||
+    chat.messages.length === 0
+  ) {
+
+    return "No messages yet.";
+
+  }
+
+
+  const lastUsefulMessage =
+    [...chat.messages]
+      .reverse()
+      .find(
+        (message) =>
+          message.role === "user" ||
+          message.role === "assistant"
+      );
+
+
+  if (!lastUsefulMessage) {
+
+    return "No messages yet.";
+
+  }
+
+
+  const cleanText =
+    lastUsefulMessage.content
+      .replace(/[#>*_`~\-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+
+  if (
+    cleanText.length <= 110
+  ) {
+
+    return cleanText;
+
+  }
+
+
+  return (
+    cleanText
+      .slice(
+        0,
+        110
+      )
+      .trimEnd() +
+    "…"
+  );
+
+}
+
+
+
+function formatHistoryDate(
+  dateString
+) {
+
+  const date =
+    new Date(
+      dateString
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "";
+
+  }
+
+
+  const now =
+    new Date();
+
+
+  const today =
+    new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+
+
+  const messageDay =
+    new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+
+
+  const difference =
+    today.getTime() -
+    messageDay.getTime();
+
+
+  const oneDay =
+    24 *
+    60 *
+    60 *
+    1000;
+
+
+  const time =
+    date.toLocaleTimeString(
+      [],
+      {
+        hour:
+          "numeric",
+
+        minute:
+          "2-digit"
+      }
+    );
+
+
+  if (
+    difference === 0
+  ) {
+
+    return `Today · ${time}`;
+
+  }
+
+
+  if (
+    difference === oneDay
+  ) {
+
+    return `Yesterday · ${time}`;
+
+  }
+
+
+  return date.toLocaleDateString(
+    [],
+    {
+      month:
+        "short",
+
+      day:
+        "numeric",
+
+      year:
+        date.getFullYear() !==
+        now.getFullYear()
+          ? "numeric"
+          : undefined
+    }
+  );
+
 }
 
 
@@ -110,651 +819,1278 @@ a {
    SIDEBAR
    ========================================================= */
 
-.sidebar {
-  position: relative;
+function openSidebar() {
 
-  z-index: 40;
+  if (!sidebar) {
+    return;
+  }
 
-  display: flex;
 
-  min-width: 0;
+  sidebar.classList.add(
+    "open"
+  );
 
-  flex-direction: column;
 
-  border-right:
-    1px solid rgba(255, 255, 255, 0.08);
+  sidebarOverlay?.classList.add(
+    "active"
+  );
 
-  padding:
-    20px
-    16px;
-
-  background: var(--navy-950);
-
-  color: var(--white);
 }
 
 
-.sidebar-top {
-  display: flex;
 
-  min-height: 38px;
+function closeSidebar() {
 
-  align-items: center;
-  justify-content: space-between;
+  if (!sidebar) {
+    return;
+  }
 
-  gap: 12px;
+
+  sidebar.classList.remove(
+    "open"
+  );
+
+
+  sidebarOverlay?.classList.remove(
+    "active"
+  );
+
 }
 
 
-.brand {
-  display: inline-flex;
 
-  align-items: center;
-}
-
-
-.brand-logo {
-  display: block;
-
-  width: 126px;
-  height: auto;
-}
+mobileMenuButton?.addEventListener(
+  "click",
+  openSidebar
+);
 
 
-.sidebar-close {
-  display: none;
 
-  width: 36px;
-  height: 36px;
-
-  align-items: center;
-  justify-content: center;
-
-  border: 0;
-  border-radius: 7px;
-
-  background: transparent;
-
-  color: #a5b6c0;
-
-  cursor: pointer;
-
-  font-size: 1.4rem;
-}
+sidebarClose?.addEventListener(
+  "click",
+  closeSidebar
+);
 
 
-.sidebar-close:hover {
-  background:
-    rgba(255, 255, 255, 0.06);
 
-  color: var(--white);
-}
+sidebarOverlay?.addEventListener(
+  "click",
+  closeSidebar
+);
 
 
-.product-label {
-  margin-top: 24px;
 
-  color: #8ca0ac;
+/* =========================================================
+   ACTIVE NAVIGATION
+   ========================================================= */
 
-  font-size: 0.68rem;
-  font-weight: 700;
+function setActiveSection(
+  section
+) {
 
-  letter-spacing: 0.12em;
+  sidebarLinks.forEach(
+    (link) => {
 
-  text-transform: uppercase;
+      link.classList.toggle(
+        "active",
+        link.dataset.section ===
+          section
+      );
+
+    }
+  );
+
 }
 
 
 
 /* =========================================================
-   NEW CHAT
+   VIEW SWITCHING
    ========================================================= */
 
-.new-chat-button {
-  display: flex;
+function showChatView(
+  focusInput = true
+) {
 
-  width: 100%;
+  if (chatView) {
 
-  min-height: 44px;
+    chatView.hidden =
+      false;
 
-  align-items: center;
+  }
 
-  gap: 10px;
 
-  margin-top: 16px;
+  if (historyScreen) {
 
-  border:
-    1px solid rgba(255, 255, 255, 0.14);
+    historyScreen.hidden =
+      true;
 
-  border-radius: 8px;
+  }
 
-  padding: 0 12px;
 
-  background:
-    rgba(255, 255, 255, 0.04);
+  if (composerArea) {
 
-  color: var(--white);
+    composerArea.hidden =
+      false;
 
-  cursor: pointer;
+  }
 
-  font-size: 0.78rem;
-  font-weight: 700;
 
-  transition:
-    background var(--transition),
-    border-color var(--transition);
-}
+  setActiveSection(
+    "chat"
+  );
 
 
-.new-chat-button:hover {
-  border-color:
-    rgba(255, 255, 255, 0.23);
+  if (
+    focusInput &&
+    messageInput
+  ) {
 
-  background:
-    rgba(255, 255, 255, 0.07);
-}
-
-
-.new-chat-plus {
-  color: var(--cyan-500);
-
-  font-size: 1rem;
-}
-
-
-
-/* =========================================================
-   SIDEBAR NAV
-   ========================================================= */
-
-.sidebar-navigation {
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 5px;
-
-  margin-top: 22px;
-}
-
-
-.sidebar-link {
-  display: flex;
-
-  width: 100%;
-
-  min-height: 40px;
-
-  align-items: center;
-
-  gap: 11px;
-
-  border: 0;
-  border-radius: 7px;
-
-  padding: 0 11px;
-
-  background: transparent;
-
-  color: #9dafb9;
-
-  cursor: pointer;
-
-  font-size: 0.77rem;
-  font-weight: 600;
-
-  text-align: left;
-
-  transition:
-    background var(--transition),
-    color var(--transition);
-}
-
-
-.sidebar-link:hover {
-  background:
-    rgba(255, 255, 255, 0.05);
-
-  color: var(--white);
-}
-
-
-.sidebar-link.active {
-  background:
-    rgba(32, 199, 217, 0.1);
-
-  color: var(--white);
-}
-
-
-.sidebar-link.active .sidebar-icon {
-  color: var(--cyan-500);
-}
-
-
-.sidebar-icon {
-  display: inline-flex;
-
-  width: 18px;
-
-  align-items: center;
-  justify-content: center;
-
-  color: #80949f;
-
-  font-size: 0.9rem;
-}
-
-
-.sidebar-spacer {
-  flex: 1;
-}
-
-
-
-/* =========================================================
-   SIDEBAR BOTTOM
-   ========================================================= */
-
-.sidebar-bottom {
-  border-top:
-    1px solid rgba(255, 255, 255, 0.08);
-
-  padding-top: 18px;
-}
-
-
-.sidebar-status {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-}
-
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-
-  flex: 0 0 auto;
-
-  border-radius: 50%;
-
-  background: var(--cyan-500);
-}
-
-
-.sidebar-status div {
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 3px;
-}
-
-
-.sidebar-status strong {
-  font-size: 0.7rem;
-}
-
-
-.sidebar-status span {
-  color: #748a97;
-
-  font-size: 0.62rem;
-}
-
-
-.back-link {
-  display: inline-block;
-
-  margin-top: 18px;
-
-  color: #8296a2;
-
-  font-size: 0.68rem;
-  font-weight: 600;
-
-  transition:
-    color var(--transition);
-}
-
-
-.back-link:hover {
-  color: var(--white);
-}
-
-
-
-/* =========================================================
-   MAIN
-   ========================================================= */
-
-.main {
-  position: relative;
-
-  display: grid;
-
-  min-width: 0;
-  height: 100vh;
-
-  grid-template-rows:
-    var(--topbar-height)
-    minmax(0, 1fr)
-    auto;
-
-  background: var(--white);
-}
-
-
-
-/* =========================================================
-   TOPBAR
-   ========================================================= */
-
-.topbar {
-  position: relative;
-
-  z-index: 20;
-
-  display: flex;
-
-  min-width: 0;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
-
-  border-bottom:
-    1px solid var(--border);
-
-  padding: 0 24px;
-
-  background:
-    rgba(255, 255, 255, 0.97);
-}
-
-
-.topbar-left,
-.topbar-right {
-  display: flex;
-
-  align-items: center;
-
-  gap: 14px;
-}
-
-
-.vision-title {
-  display: flex;
-
-  align-items: center;
-
-  gap: 9px;
-}
-
-
-.vision-title strong {
-  color: var(--ink-900);
-
-  font-size: 0.88rem;
-}
-
-
-.vision-title span {
-  border-left:
-    1px solid var(--border);
-
-  padding-left: 9px;
-
-  color: var(--ink-500);
-
-  font-size: 0.68rem;
-}
-
-
-.mobile-menu-button {
-  display: none;
-
-  position: relative;
-
-  width: 38px;
-  height: 38px;
-
-  align-items: center;
-  justify-content: center;
-
-  border: 0;
-  border-radius: 7px;
-
-  background: transparent;
-
-  cursor: pointer;
-}
-
-
-.mobile-menu-button:hover {
-  background: var(--off-white);
-}
-
-
-.mobile-menu-button span {
-  position: absolute;
-
-  width: 18px;
-  height: 2px;
-
-  background: var(--navy-900);
-}
-
-
-.mobile-menu-button span:first-child {
-  transform: translateY(-4px);
-}
-
-
-.mobile-menu-button span:last-child {
-  transform: translateY(4px);
-}
-
-
-
-/* =========================================================
-   MODEL BUTTON
-   ========================================================= */
-
-.model-button {
-  display: inline-flex;
-
-  min-height: 36px;
-
-  align-items: center;
-
-  gap: 7px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 7px;
-
-  padding: 0 10px;
-
-  background: var(--white);
-
-  color: var(--ink-700);
-
-  font-size: 0.67rem;
-  font-weight: 700;
-}
-
-
-.model-button:disabled {
-  opacity: 1;
-}
-
-
-.model-indicator {
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: var(--cyan-500);
-}
-
-
-.model-chevron {
-  color: #8c9ba4;
-}
-
-
-.profile-button {
-  display: inline-flex;
-
-  width: 34px;
-  height: 34px;
-
-  align-items: center;
-  justify-content: center;
-
-  border: 0;
-  border-radius: 50%;
-
-  background: var(--navy-900);
-
-  color: var(--white);
-
-  cursor: pointer;
-
-  font-size: 0.62rem;
-  font-weight: 800;
-}
-
-
-
-/* =========================================================
-   CHAT AREA
-   ========================================================= */
-
-.chat-area {
-  position: relative;
-
-  min-height: 0;
-
-  overflow-y: auto;
-
-  background: var(--white);
-
-  scroll-behavior: smooth;
-}
-
-
-
-/* =========================================================
-   WELCOME SCREEN
-   ========================================================= */
-
-.welcome-screen {
-  display: flex;
-
-  width: 100%;
-  min-height: 100%;
-
-  align-items: center;
-  justify-content: center;
-
-  padding:
-    56px
-    34px
-    110px;
-}
-
-
-.welcome-screen.hidden {
-  display: none;
-}
-
-
-.welcome-content {
-  width: min(760px, 100%);
-}
-
-
-.vision-mark {
-  display: flex;
-
-  width: 48px;
-  height: 48px;
-
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 10px;
-
-  background: var(--navy-900);
-
-  color: var(--cyan-500);
-
-  font-size: 1.05rem;
-  font-weight: 800;
-}
-
-
-.welcome-eyebrow {
-  margin:
-    24px
-    0
-    10px;
-
-  color: var(--cyan-600);
-
-  font-size: 0.68rem;
-  font-weight: 800;
-
-  letter-spacing: 0.1em;
-
-  text-transform: uppercase;
-}
-
-
-.welcome-content h1 {
-  max-width: 700px;
-
-  margin: 0;
-
-  color: var(--ink-900);
-
-  font-size:
-    clamp(
-      2.35rem,
-      5vw,
-      4.2rem
+    requestAnimationFrame(
+      () => {
+        messageInput.focus();
+      }
     );
 
-  font-weight: 800;
+  }
 
-  letter-spacing: -0.055em;
-
-  line-height: 1.03;
 }
 
 
-.welcome-description {
-  max-width: 620px;
 
-  margin:
-    22px
-    0
-    0;
+function showHistoryView() {
 
-  color: var(--ink-500);
+  renderHistory();
 
-  font-size: 0.96rem;
 
-  line-height: 1.7;
+  if (chatView) {
+
+    chatView.hidden =
+      true;
+
+  }
+
+
+  if (historyScreen) {
+
+    historyScreen.hidden =
+      false;
+
+  }
+
+
+  if (composerArea) {
+
+    composerArea.hidden =
+      true;
+
+  }
+
+
+  if (chatArea) {
+
+    chatArea.scrollTop =
+      0;
+
+  }
+
+
+  setActiveSection(
+    "history"
+  );
+
 }
+
+
+
+/* =========================================================
+   TEXTAREA AUTO RESIZE
+   ========================================================= */
+
+function resizeTextarea() {
+
+  if (!messageInput) {
+    return;
+  }
+
+
+  messageInput.style.height =
+    "auto";
+
+
+  messageInput.style.height =
+    `${Math.min(
+      messageInput.scrollHeight,
+      180
+    )}px`;
+
+}
+
+
+
+messageInput?.addEventListener(
+  "input",
+  () => {
+
+    resizeTextarea();
+
+
+    const hasText =
+      messageInput.value
+        .trim()
+        .length > 0;
+
+
+    sendButton.disabled =
+      !hasText ||
+      requestInProgress;
+
+  }
+);
+
+
+
+/* =========================================================
+   ENTER TO SEND
+   ========================================================= */
+
+messageInput?.addEventListener(
+  "keydown",
+  (event) => {
+
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+
+      event.preventDefault();
+
+
+      chatForm?.requestSubmit();
+
+    }
+
+  }
+);
+
+
+
+/* =========================================================
+   CHAT DISPLAY
+   ========================================================= */
+
+function showMessages() {
+
+  welcomeScreen?.classList.add(
+    "hidden"
+  );
+
+
+  messages?.classList.add(
+    "active"
+  );
+
+}
+
+
+
+function showWelcomeScreen() {
+
+  messages?.classList.remove(
+    "active"
+  );
+
+
+  welcomeScreen?.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+
+function scrollToBottom() {
+
+  if (!chatArea) {
+    return;
+  }
+
+
+  requestAnimationFrame(
+    () => {
+
+      chatArea.scrollTop =
+        chatArea.scrollHeight;
+
+    }
+  );
+
+}
+
+
+
+/* =========================================================
+   MARKDOWN
+   ========================================================= */
+
+function renderMarkdown(text) {
+
+  if (
+    typeof window.marked ===
+      "undefined" ||
+    typeof window.DOMPurify ===
+      "undefined"
+  ) {
+
+    return null;
+
+  }
+
+
+  const rendered =
+    window.marked.parse(
+      text,
+      {
+        gfm:
+          true,
+
+        breaks:
+          true
+      }
+    );
+
+
+  return window.DOMPurify.sanitize(
+    rendered,
+    {
+      USE_PROFILES: {
+        html:
+          true
+      }
+    }
+  );
+
+}
+
+
+
+/* =========================================================
+   CREATE MESSAGE
+   ========================================================= */
+
+function addMessage(
+  role,
+  text
+) {
+
+  if (!messages) {
+    return;
+  }
+
+
+  showMessages();
+
+
+  const message =
+    document.createElement(
+      "article"
+    );
+
+
+  message.className =
+    `message ${role}`;
+
+
+  const avatar =
+    document.createElement(
+      "div"
+    );
+
+
+  avatar.className =
+    "message-avatar";
+
+
+  if (
+    role === "assistant"
+  ) {
+
+    avatar.textContent =
+      "V";
+
+  } else if (
+    role === "system"
+  ) {
+
+    avatar.textContent =
+      "!";
+
+  } else {
+
+    avatar.textContent =
+      "You";
+
+  }
+
+
+  const content =
+    document.createElement(
+      "div"
+    );
+
+
+  content.className =
+    "message-content";
+
+
+  const name =
+    document.createElement(
+      "span"
+    );
+
+
+  name.className =
+    "message-name";
+
+
+  if (
+    role === "assistant"
+  ) {
+
+    name.textContent =
+      "VisionAI";
+
+  } else if (
+    role === "system"
+  ) {
+
+    name.textContent =
+      "VisionAI";
+
+  } else {
+
+    name.textContent =
+      "You";
+
+  }
+
+
+  const messageText =
+    document.createElement(
+      "div"
+    );
+
+
+  messageText.className =
+    "message-text";
+
+
+  if (
+    role === "assistant"
+  ) {
+
+    const renderedMarkdown =
+      renderMarkdown(
+        text
+      );
+
+
+    if (
+      renderedMarkdown !==
+      null
+    ) {
+
+      messageText.innerHTML =
+        renderedMarkdown;
+
+    } else {
+
+      messageText.textContent =
+        text;
+
+    }
+
+  } else {
+
+    messageText.textContent =
+      text;
+
+  }
+
+
+  content.append(
+    name,
+    messageText
+  );
+
+
+  message.append(
+    avatar,
+    content
+  );
+
+
+  messages.appendChild(
+    message
+  );
+
+
+  scrollToBottom();
+
+}
+
+
+
+/* =========================================================
+   LOADING MESSAGE
+   ========================================================= */
+
+function addLoadingMessage() {
+
+  if (!messages) {
+    return null;
+  }
+
+
+  showMessages();
+
+
+  const message =
+    document.createElement(
+      "article"
+    );
+
+
+  message.className =
+    "message assistant";
+
+
+  message.dataset.loading =
+    "true";
+
+
+  message.innerHTML = `
+    <div class="message-avatar">
+      V
+    </div>
+
+    <div class="message-content">
+
+      <span class="message-name">
+        VisionAI
+      </span>
+
+      <div class="message-text">
+        Thinking…
+      </div>
+
+    </div>
+  `;
+
+
+  messages.appendChild(
+    message
+  );
+
+
+  scrollToBottom();
+
+
+  return message;
+
+}
+
+
+
+/* =========================================================
+   RENDER CURRENT CHAT
+   ========================================================= */
+
+function renderChat(
+  chat
+) {
+
+  if (!messages) {
+    return;
+  }
+
+
+  messages.innerHTML =
+    "";
+
+
+  if (
+    !chat ||
+    !Array.isArray(
+      chat.messages
+    ) ||
+    chat.messages.length === 0
+  ) {
+
+    conversation =
+      [];
+
+
+    showWelcomeScreen();
+
+
+    return;
+
+  }
+
+
+  chat.messages.forEach(
+    (message) => {
+
+      addMessage(
+        message.role,
+        message.content
+      );
+
+    }
+  );
+
+
+  syncConversationFromChat(
+    chat
+  );
+
+}
+
+
+
+/* =========================================================
+   OPEN CHAT
+   ========================================================= */
+
+function openChat(
+  chatId
+) {
+
+  const chat =
+    getChatById(
+      chatId
+    );
+
+
+  if (!chat) {
+    return;
+  }
+
+
+  currentChatId =
+    chat.id;
+
+
+  chatStorage.saveCurrentChatId(
+    currentChatId
+  );
+
+
+  syncConversationFromChat(
+    chat
+  );
+
+
+  renderChat(
+    chat
+  );
+
+
+  showChatView();
+
+
+  closeSidebar();
+
+
+  if (chatArea) {
+
+    requestAnimationFrame(
+      () => {
+
+        chatArea.scrollTop =
+          chatArea.scrollHeight;
+
+      }
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   HISTORY
+   ========================================================= */
+
+function renderHistory() {
+
+  if (
+    !historyList ||
+    !historyEmpty
+  ) {
+
+    return;
+
+  }
+
+
+  historyList.innerHTML =
+    "";
+
+
+  const sortedChats =
+    [...chats].sort(
+      (a, b) =>
+        new Date(
+          b.updatedAt
+        ).getTime() -
+        new Date(
+          a.updatedAt
+        ).getTime()
+    );
+
+
+  if (
+    sortedChats.length === 0
+  ) {
+
+    historyList.hidden =
+      true;
+
+
+    historyEmpty.hidden =
+      false;
+
+
+    return;
+
+  }
+
+
+  historyList.hidden =
+    false;
+
+
+  historyEmpty.hidden =
+    true;
+
+
+  sortedChats.forEach(
+    (chat) => {
+
+      const item =
+        document.createElement(
+          "article"
+        );
+
+
+      item.className =
+        "history-item";
+
+
+      item.dataset.chatId =
+        chat.id;
+
+
+      if (
+        chat.id ===
+        currentChatId
+      ) {
+
+        item.classList.add(
+          "current"
+        );
+
+      }
+
+
+      const openButton =
+        document.createElement(
+          "button"
+        );
+
+
+      openButton.className =
+        "history-item-main";
+
+
+      openButton.type =
+        "button";
+
+
+      openButton.setAttribute(
+        "aria-label",
+        `Open conversation: ${chat.title}`
+      );
+
+
+      const textWrap =
+        document.createElement(
+          "div"
+        );
+
+
+      textWrap.className =
+        "history-item-text";
+
+
+      const title =
+        document.createElement(
+          "h2"
+        );
+
+
+      title.textContent =
+        chat.title;
+
+
+      const preview =
+        document.createElement(
+          "p"
+        );
+
+
+      preview.textContent =
+        getChatPreview(
+          chat
+        );
+
+
+      textWrap.append(
+        title,
+        preview
+      );
+
+
+      const meta =
+        document.createElement(
+          "div"
+        );
+
+
+      meta.className =
+        "history-item-meta";
+
+
+      const date =
+        document.createElement(
+          "span"
+        );
+
+
+      date.className =
+        "history-date";
+
+
+      date.textContent =
+        formatHistoryDate(
+          chat.updatedAt
+        );
+
+
+      meta.appendChild(
+        date
+      );
+
+
+      openButton.append(
+        textWrap,
+        meta
+      );
+
+
+      const deleteButton =
+        document.createElement(
+          "button"
+        );
+
+
+      deleteButton.className =
+        "history-delete-button";
+
+
+      deleteButton.type =
+        "button";
+
+
+      deleteButton.setAttribute(
+        "aria-label",
+        `Delete conversation: ${chat.title}`
+      );
+
+
+      deleteButton.title =
+        "Delete conversation";
+
+
+      deleteButton.textContent =
+        "×";
+
+
+      openButton.addEventListener(
+        "click",
+        () => {
+
+          openChat(
+            chat.id
+          );
+
+        }
+      );
+
+
+      deleteButton.addEventListener(
+        "click",
+        (event) => {
+
+          event.stopPropagation();
+
+
+          deleteChat(
+            chat.id
+          );
+
+        }
+      );
+
+
+      item.append(
+        openButton,
+        deleteButton
+      );
+
+
+      historyList.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+
+
+/* =========================================================
+   DELETE CHAT
+   ========================================================= */
+
+function deleteChat(
+  chatId
+) {
+
+  const chat =
+    getChatById(
+      chatId
+    );
+
+
+  if (!chat) {
+    return;
+  }
+
+
+  const shouldDelete =
+    window.confirm(
+      `Delete "${chat.title}"? This conversation will be removed from this browser.`
+    );
+
+
+  if (!shouldDelete) {
+    return;
+  }
+
+
+  chats =
+    chats.filter(
+      (item) =>
+        item.id !== chatId
+    );
+
+
+  if (
+    currentChatId ===
+    chatId
+  ) {
+
+    currentChatId =
+      null;
+
+
+    conversation =
+      [];
+
+
+    if (messages) {
+
+      messages.innerHTML =
+        "";
+
+    }
+
+
+    showWelcomeScreen();
+
+  }
+
+
+  saveChats();
+
+
+  renderHistory();
+
+}
+
+
+
+/* =========================================================
+   SEND MESSAGE
+   ========================================================= */
+
+async function sendMessage(
+  text
+) {
+
+  const trimmedText =
+    text.trim();
+
+
+  if (
+    !trimmedText ||
+    requestInProgress
+  ) {
+
+    return;
+
+  }
+
+
+  showChatView(
+    false
+  );
+
+
+  requestInProgress =
+    true;
+
+
+  sendButton.disabled =
+    true;
+
+
+  /*
+    Create the chat only when the first real message
+    is sent. This prevents empty conversations from
+    filling History every time New Chat is clicked.
+  */
+
+  ensureCurrentChat(
+    trimmedText
+  );
+
+
+  addMessage(
+    "user",
+    trimmedText
+  );
+
+
+  addStoredMessage(
+    "user",
+    trimmedText
+  );
+
+
+  syncConversationFromChat(
+    getCurrentChat()
+  );
+
+
+  messageInput.value =
+    "";
+
+
+  resizeTextarea();
+
+
+  const loadingMessage =
+    addLoadingMessage();
+
+
+  try {
+
+    const response =
+      await fetch(
+        VISIONAI_API_URL,
+        {
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              messages:
+                conversation
+            })
+        }
+      );
+
+
+    let data;
+
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
+
+      throw new Error(
+        `VisionAI backend returned an invalid response. HTTP ${response.status}`
+      );
+
+    }
+
+
+    if (!response.ok) {
+
+      console.error(
+        "VisionAI backend error:",
+        data
+      );
+
+
+      throw new Error(
+        data?.error ||
+        data?.message ||
+        `Request failed with HTTP ${response.status}`
+      );
+
+    }
+
+
+    const assistantText =
+      data?.reply ||
+      data?.message ||
+      data?.text;
+
+
+    if (!assistantText) {
+
+      throw new Error(
+        "VisionAI returned an empty response."
+      );
+
+    }
+
+
+    loadingMessage?.remove();
+
+
+    addMessage(
+      "assistant",
+      assistantText
+    );
+
+
+    addStoredMessage(
+      "assistant",
+      assistantText
+    );
+
+
+    syncConversationFromChat(
+      getCurrentChat()
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "VisionAI error:",
+      error
+    );
+
+
+    loadingMessage?.remove();
+
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unknown error";
+
+
+    const visibleError =
+      `VisionAI couldn't complete that request. ${errorMessage}`;
+
+
+    addMessage(
+      "system",
+      visibleError
+    );
+
+
+    /*
+      Store the visible error so History restores the
+      conversation exactly as the user saw it.
+
+      System errors are filtered out before future AI
+      requests are sent.
+    */
+
+    addStoredMessage(
+      "system",
+      visibleError
+    );
+
+
+    syncConversationFromChat(
+      getCurrentChat()
+    );
+
+
+  } finally {
+
+    requestInProgress =
+      false;
+
+
+    sendButton.disabled =
+      messageInput.value
+        .trim()
+        .length === 0;
+
+  }
+
+}
+
+
+
+/* =========================================================
+   FORM SUBMIT
+   ========================================================= */
+
+chatForm?.addEventListener(
+  "submit",
+  (event) => {
+
+    event.preventDefault();
+
+
+    sendMessage(
+      messageInput.value
+    );
+
+  }
+);
 
 
 
@@ -762,823 +2098,249 @@ a {
    STARTER CARDS
    ========================================================= */
 
-.starter-grid {
-  display: grid;
+starterCards.forEach(
+  (card) => {
 
-  grid-template-columns:
-    repeat(2, 1fr);
+    card.addEventListener(
+      "click",
+      () => {
 
-  gap: 12px;
+        const prompt =
+          card.dataset.prompt ||
+          "";
 
-  margin-top: 36px;
-}
 
+        messageInput.value =
+          prompt;
 
-.starter-card {
-  display: flex;
 
-  min-height: 112px;
+        resizeTextarea();
 
-  flex-direction: column;
 
-  align-items: flex-start;
+        sendButton.disabled =
+          prompt.trim().length ===
+          0;
 
-  gap: 9px;
 
-  border:
-    1px solid var(--border);
+        messageInput.focus();
 
-  border-radius: 9px;
-
-  padding: 18px;
-
-  background: var(--white);
-
-  color: var(--ink-900);
-
-  cursor: pointer;
-
-  text-align: left;
-
-  transition:
-    border-color var(--transition),
-    background var(--transition);
-}
-
-
-.starter-card:hover {
-  border-color: #c4d1d7;
-
-  background: #fafcfd;
-}
-
-
-.starter-label {
-  color: var(--cyan-600);
-
-  font-size: 0.64rem;
-  font-weight: 800;
-
-  letter-spacing: 0.07em;
-
-  text-transform: uppercase;
-}
-
-
-.starter-card strong {
-  max-width: 260px;
-
-  font-size: 0.82rem;
-
-  line-height: 1.45;
-}
-
-
-
-/* =========================================================
-   MESSAGES
-   ========================================================= */
-
-.messages {
-  display: none;
-
-  width: min(820px, calc(100% - 48px));
-
-  margin: 0 auto;
-
-  padding:
-    44px
-    0
-    100px;
-}
-
-
-.messages.active {
-  display: block;
-}
-
-
-.message {
-  display: grid;
-
-  grid-template-columns:
-    34px
-    minmax(0, 1fr);
-
-  gap: 14px;
-
-  margin-bottom: 30px;
-}
-
-
-.message-avatar {
-  display: flex;
-
-  width: 34px;
-  height: 34px;
-
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 8px;
-
-  background: var(--navy-900);
-
-  color: var(--white);
-
-  font-size: 0.62rem;
-  font-weight: 800;
-}
-
-
-.message.assistant .message-avatar {
-  color: var(--cyan-500);
-}
-
-
-.message-content {
-  min-width: 0;
-
-  padding-top: 4px;
-}
-
-
-.message-name {
-  display: block;
-
-  margin-bottom: 8px;
-
-  color: var(--ink-900);
-
-  font-size: 0.73rem;
-  font-weight: 800;
-}
-
-
-/* =========================================================
-   MESSAGE CONTENT / MARKDOWN
-   ========================================================= */
-
-.message-text {
-  margin: 0;
-
-  color: var(--ink-700);
-
-  font-size: 0.92rem;
-
-  line-height: 1.75;
-
-  overflow-wrap: anywhere;
-}
-
-
-.message-text > :first-child {
-  margin-top: 0;
-}
-
-
-.message-text > :last-child {
-  margin-bottom: 0;
-}
-
-
-.message-text p {
-  margin:
-    0
-    0
-    14px;
-}
-
-
-.message-text h1,
-.message-text h2,
-.message-text h3,
-.message-text h4 {
-  margin:
-    24px
-    0
-    10px;
-
-  color: var(--ink-900);
-
-  font-weight: 750;
-
-  letter-spacing: -0.025em;
-
-  line-height: 1.3;
-}
-
-
-.message-text h1 {
-  font-size: 1.35rem;
-}
-
-
-.message-text h2 {
-  font-size: 1.18rem;
-}
-
-
-.message-text h3 {
-  font-size: 1.04rem;
-}
-
-
-.message-text h4 {
-  font-size: 0.96rem;
-}
-
-
-.message-text strong {
-  color: var(--ink-900);
-
-  font-weight: 700;
-}
-
-
-.message-text em {
-  color: var(--ink-700);
-}
-
-
-.message-text ul,
-.message-text ol {
-  margin:
-    10px
-    0
-    16px;
-
-  padding-left: 24px;
-}
-
-
-.message-text li {
-  margin: 5px 0;
-
-  padding-left: 3px;
-}
-
-
-.message-text li::marker {
-  color: var(--ink-500);
-
-  font-weight: 600;
-}
-
-
-.message-text a {
-  color: var(--cyan-600);
-
-  font-weight: 600;
-
-  text-decoration: underline;
-
-  text-decoration-thickness: 1px;
-
-  text-underline-offset: 3px;
-}
-
-
-.message-text a:hover {
-  color: var(--cyan-500);
-}
-
-
-.message-text code {
-  border:
-    1px solid var(--border);
-
-  border-radius: 5px;
-
-  padding:
-    2px
-    5px;
-
-  background: var(--off-white);
-
-  color: var(--ink-900);
-
-  font-family:
-    "SFMono-Regular",
-    Consolas,
-    "Liberation Mono",
-    monospace;
-
-  font-size: 0.84em;
-}
-
-
-.message-text pre {
-  overflow-x: auto;
-
-  margin:
-    16px
-    0;
-
-  border-radius: 8px;
-
-  padding: 16px;
-
-  background: var(--navy-950);
-
-  color: #e9f3f6;
-
-  line-height: 1.6;
-}
-
-
-.message-text pre code {
-  border: 0;
-
-  padding: 0;
-
-  background: transparent;
-
-  color: inherit;
-
-  font-size: 0.82rem;
-}
-
-
-.message-text blockquote {
-  margin:
-    16px
-    0;
-
-  border-left:
-    3px solid var(--cyan-500);
-
-  padding:
-    2px
-    0
-    2px
-    16px;
-
-  color: var(--ink-500);
-}
-
-
-.message-text blockquote p {
-  margin-bottom: 0;
-}
-
-
-.message-text hr {
-  margin:
-    22px
-    0;
-
-  border: 0;
-
-  border-top:
-    1px solid var(--border);
-}
-
-
-.message-text table {
-  display: block;
-
-  width: 100%;
-
-  max-width: 100%;
-
-  overflow-x: auto;
-
-  margin:
-    16px
-    0;
-
-  border-collapse: collapse;
-
-  font-size: 0.86rem;
-}
-
-
-.message-text th,
-.message-text td {
-  border:
-    1px solid var(--border);
-
-  padding:
-    9px
-    11px;
-
-  text-align: left;
-
-  vertical-align: top;
-}
-
-
-.message-text th {
-  background: var(--off-white);
-
-  color: var(--ink-900);
-
-  font-weight: 700;
-}
-
-
-.message.system .message-text,
-.message.user .message-text {
-  white-space: pre-wrap;
-}
-
-
-.message.system .message-text {
-  color: #7c5a20;
-}
-
-
-
-/* =========================================================
-   COMPOSER
-   ========================================================= */
-
-.composer-area {
-  position: relative;
-
-  z-index: 10;
-
-  padding:
-    10px
-    24px
-    16px;
-
-  background:
-    linear-gradient(
-      to top,
-      var(--white) 78%,
-      rgba(255, 255, 255, 0)
-    );
-}
-
-
-.composer-wrap {
-  width: min(820px, 100%);
-
-  margin: 0 auto;
-}
-
-
-.composer {
-  overflow: hidden;
-
-  border:
-    1px solid #ccd7dc;
-
-  border-radius: 12px;
-
-  background: var(--white);
-
-  box-shadow:
-    0 10px 30px rgba(4, 21, 34, 0.07);
-
-  transition:
-    border-color var(--transition),
-    box-shadow var(--transition);
-}
-
-
-.composer:focus-within {
-  border-color: #aabcc5;
-
-  box-shadow:
-    0 12px 34px rgba(4, 21, 34, 0.09);
-}
-
-
-.composer textarea {
-  display: block;
-
-  width: 100%;
-  max-height: 180px;
-
-  resize: none;
-
-  border: 0;
-  outline: 0;
-
-  padding:
-    16px
-    16px
-    6px;
-
-  background: transparent;
-
-  color: var(--ink-900);
-
-  font-size: 0.9rem;
-
-  line-height: 1.5;
-}
-
-
-.composer textarea::placeholder {
-  color: #8b9aa3;
-}
-
-
-.composer-bottom {
-  display: flex;
-
-  min-height: 48px;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 16px;
-
-  padding:
-    6px
-    9px
-    9px
-    10px;
-}
-
-
-.composer-tools {
-  display: flex;
-
-  align-items: center;
-
-  gap: 9px;
-}
-
-
-.tool-button {
-  display: flex;
-
-  width: 32px;
-  height: 32px;
-
-  align-items: center;
-  justify-content: center;
-
-  border:
-    1px solid var(--border);
-
-  border-radius: 7px;
-
-  background: var(--white);
-
-  color: var(--ink-500);
-
-  font-size: 1rem;
-}
-
-
-.tool-button:disabled {
-  opacity: 0.55;
-}
-
-
-.composer-hint {
-  color: #8a9aa3;
-
-  font-size: 0.62rem;
-  font-weight: 600;
-}
-
-
-.send-button {
-  display: flex;
-
-  width: 34px;
-  height: 34px;
-
-  align-items: center;
-  justify-content: center;
-
-  border: 0;
-  border-radius: 8px;
-
-  background: var(--navy-900);
-
-  color: var(--white);
-
-  cursor: pointer;
-
-  font-size: 1rem;
-
-  transition:
-    background var(--transition),
-    opacity var(--transition);
-}
-
-
-.send-button:hover:not(:disabled) {
-  background: var(--navy-800);
-}
-
-
-.send-button:disabled {
-  cursor: default;
-
-  opacity: 0.35;
-}
-
-
-.composer-note {
-  margin:
-    7px
-    0
-    0;
-
-  color: #8b9aa3;
-
-  font-size: 0.58rem;
-
-  text-align: center;
-}
-
-
-
-/* =========================================================
-   OVERLAY
-   ========================================================= */
-
-.sidebar-overlay {
-  position: fixed;
-
-  z-index: 30;
-
-  inset: 0;
-
-  display: none;
-
-  background:
-    rgba(4, 14, 23, 0.5);
-}
-
-
-.sidebar-overlay.active {
-  display: block;
-}
-
-
-
-/* =========================================================
-   TABLET / MOBILE
-   ========================================================= */
-
-@media (max-width: 900px) {
-
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-
-  .sidebar {
-    position: fixed;
-
-    top: 0;
-    bottom: 0;
-    left: 0;
-
-    width: min(
-      290px,
-      calc(100vw - 52px)
+      }
     );
 
-    transform:
-      translateX(-100%);
+  }
+);
 
-    transition:
-      transform 200ms ease;
+
+
+/* =========================================================
+   NEW CHAT
+   ========================================================= */
+
+function startNewChat() {
+
+  currentChatId =
+    null;
+
+
+  conversation =
+    [];
+
+
+  chatStorage.saveCurrentChatId(
+    null
+  );
+
+
+  if (messages) {
+
+    messages.innerHTML =
+      "";
+
   }
 
 
-  .sidebar.open {
-    transform:
-      translateX(0);
+  showWelcomeScreen();
+
+
+  if (messageInput) {
+
+    messageInput.value =
+      "";
+
   }
 
 
-  .sidebar-close {
-    display: inline-flex;
+  resizeTextarea();
+
+
+  if (sendButton) {
+
+    sendButton.disabled =
+      true;
+
   }
 
 
-  .mobile-menu-button {
-    display: inline-flex;
+  showChatView();
+
+
+  closeSidebar();
+
+
+  if (chatArea) {
+
+    chatArea.scrollTop =
+      0;
+
   }
 
 }
 
 
 
-@media (max-width: 650px) {
+newChatButton?.addEventListener(
+  "click",
+  startNewChat
+);
 
-  :root {
-    --topbar-height: 62px;
+
+
+historyNewChatButton?.addEventListener(
+  "click",
+  startNewChat
+);
+
+
+
+historyEmptyButton?.addEventListener(
+  "click",
+  startNewChat
+);
+
+
+
+/* =========================================================
+   SIDEBAR NAVIGATION
+   ========================================================= */
+
+sidebarLinks.forEach(
+  (button) => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        const section =
+          button.dataset.section;
+
+
+        if (
+          section === "chat"
+        ) {
+
+          showChatView();
+
+        } else if (
+          section === "history"
+        ) {
+
+          showHistoryView();
+
+        } else {
+
+          /*
+            Saved and Files are still planned.
+
+            Keep the current VisionAI view visible until
+            their real interfaces are built.
+          */
+
+          console.log(
+            `${section} is planned for a future VisionAI update.`
+          );
+
+          setActiveSection(
+            section
+          );
+
+        }
+
+
+        closeSidebar();
+
+      }
+    );
+
+  }
+);
+
+
+
+/* =========================================================
+   RESTORE LAST CHAT
+   ========================================================= */
+
+function restoreLastChat() {
+
+  if (!currentChatId) {
+
+    showWelcomeScreen();
+
+    return;
+
   }
 
 
-  .topbar {
-    padding:
-      0
-      14px;
+  const chat =
+    getChatById(
+      currentChatId
+    );
+
+
+  if (!chat) {
+
+    currentChatId =
+      null;
+
+
+    chatStorage.saveCurrentChatId(
+      null
+    );
+
+
+    showWelcomeScreen();
+
+
+    return;
+
   }
 
 
-  .vision-title span {
-    display: none;
-  }
+  syncConversationFromChat(
+    chat
+  );
 
 
-  .model-button {
-    display: none;
-  }
-
-
-  .welcome-screen {
-    align-items: flex-start;
-
-    padding:
-      48px
-      18px
-      80px;
-  }
-
-
-  .welcome-content h1 {
-    font-size:
-      clamp(
-        2.25rem,
-        11vw,
-        3.2rem
-      );
-  }
-
-
-  .welcome-description {
-    font-size: 0.9rem;
-  }
-
-
-  .starter-grid {
-    grid-template-columns: 1fr;
-  }
-
-
-  .starter-card {
-    min-height: 96px;
-  }
-
-
-  .messages {
-    width:
-      calc(100% - 28px);
-
-    padding-top: 30px;
-  }
-
-
-  .composer-area {
-    padding:
-      8px
-      12px
-      12px;
-  }
-
-
-  .message {
-    grid-template-columns:
-      30px
-      minmax(0, 1fr);
-
-    gap: 11px;
-  }
-
-
-  .message-avatar {
-    width: 30px;
-    height: 30px;
-  }
+  renderChat(
+    chat
+  );
 
 }
 
 
 
 /* =========================================================
-   REDUCED MOTION
+   INITIAL STATE
    ========================================================= */
 
-@media (prefers-reduced-motion: reduce) {
+restoreLastChat();
 
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
+renderHistory();
 
-    transition-duration:
-      0.01ms !important;
+resizeTextarea();
 
-    animation-duration:
-      0.01ms !important;
+setActiveSection(
+  "chat"
+);
 
-    animation-iteration-count:
-      1 !important;
-  }
-
-}
+messageInput?.focus();
