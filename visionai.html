@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -19,6 +20,11 @@
 
   <title>VisionAI — ProVision</title>
 
+
+  <!-- =========================
+       FONTS
+  ========================== -->
+
   <link
     rel="preconnect"
     href="https://fonts.googleapis.com"
@@ -35,19 +41,26 @@
     rel="stylesheet"
   />
 
-<link
-  rel="stylesheet"
-  href="visionai.css?v=2"
->
+
+  <!-- =========================
+       STYLES
+  ========================== -->
+
+  <link
+    rel="stylesheet"
+    href="visionai.css?v=3"
+  />
 </head>
+
 
 <body>
 
   <div class="app-shell">
 
-    <!-- =========================
+
+    <!-- =====================================================
          SIDEBAR
-    ========================== -->
+    ====================================================== -->
 
     <aside
       class="sidebar"
@@ -68,6 +81,7 @@
           />
         </a>
 
+
         <button
           class="sidebar-close"
           id="sidebarClose"
@@ -85,11 +99,16 @@
       </div>
 
 
+      <!-- =========================
+           NEW CHAT
+      ========================== -->
+
       <button
         class="new-chat-button"
         id="newChatButton"
         type="button"
       >
+
         <span class="new-chat-plus">
           +
         </span>
@@ -97,8 +116,13 @@
         <span>
           New chat
         </span>
+
       </button>
 
+
+      <!-- =========================
+           NAVIGATION
+      ========================== -->
 
       <nav
         class="sidebar-navigation"
@@ -110,6 +134,7 @@
           type="button"
           data-section="chat"
         >
+
           <span class="sidebar-icon">
             ◇
           </span>
@@ -117,6 +142,7 @@
           <span>
             Chat
           </span>
+
         </button>
 
 
@@ -125,6 +151,7 @@
           type="button"
           data-section="history"
         >
+
           <span class="sidebar-icon">
             ◷
           </span>
@@ -132,6 +159,7 @@
           <span>
             History
           </span>
+
         </button>
 
 
@@ -140,6 +168,7 @@
           type="button"
           data-section="saved"
         >
+
           <span class="sidebar-icon">
             ☆
           </span>
@@ -147,6 +176,7 @@
           <span>
             Saved
           </span>
+
         </button>
 
 
@@ -155,6 +185,7 @@
           type="button"
           data-section="files"
         >
+
           <span class="sidebar-icon">
             ▱
           </span>
@@ -162,6 +193,7 @@
           <span>
             Files
           </span>
+
         </button>
 
       </nav>
@@ -170,6 +202,10 @@
       <div class="sidebar-spacer"></div>
 
 
+      <!-- =========================
+           SIDEBAR BOTTOM
+      ========================== -->
+
       <div class="sidebar-bottom">
 
         <div class="sidebar-status">
@@ -177,6 +213,7 @@
           <span class="status-dot"></span>
 
           <div>
+
             <strong>
               VisionAI
             </strong>
@@ -184,6 +221,7 @@
             <span>
               ProVision platform
             </span>
+
           </div>
 
         </div>
@@ -202,15 +240,19 @@
 
 
 
-    <!-- =========================
+    <!-- =====================================================
          MAIN
-    ========================== -->
+    ====================================================== -->
 
-    <main class="main">
+    <main
+      class="main"
+      id="main"
+    >
 
-      <!-- =========================
+
+      <!-- ===================================================
            TOPBAR
-      ========================== -->
+      ==================================================== -->
 
       <header class="topbar">
 
@@ -250,6 +292,7 @@
             type="button"
             disabled
           >
+
             <span class="model-indicator"></span>
 
             VisionAI
@@ -257,6 +300,7 @@
             <span class="model-chevron">
               ▾
             </span>
+
           </button>
 
 
@@ -274,103 +318,240 @@
 
 
 
-      <!-- =========================
-           CHAT AREA
-      ========================== -->
+      <!-- ===================================================
+           CONTENT AREA
+      ==================================================== -->
 
       <section
         class="chat-area"
         id="chatArea"
       >
 
-        <!-- =========================
-             EMPTY / START SCREEN
-        ========================== -->
+
+        <!-- ===============================================
+             CHAT VIEW
+        ================================================ -->
 
         <div
-          class="welcome-screen"
-          id="welcomeScreen"
+          class="chat-view"
+          id="chatView"
         >
 
-          <div class="welcome-content">
 
-            <div class="vision-mark">
-              V
+          <!-- =========================
+               EMPTY / START SCREEN
+          ========================== -->
+
+          <div
+            class="welcome-screen"
+            id="welcomeScreen"
+          >
+
+            <div class="welcome-content">
+
+              <div class="vision-mark">
+                V
+              </div>
+
+
+              <p class="welcome-eyebrow">
+                VisionAI
+              </p>
+
+
+              <h1>
+                What can VisionAI help you accomplish?
+              </h1>
+
+
+              <p class="welcome-description">
+                Write, plan, create, research, and work across the
+                ProVision platform from one intelligent workspace.
+              </p>
+
+
+              <div class="starter-grid">
+
+
+                <button
+                  class="starter-card"
+                  type="button"
+                  data-prompt="Help me write something."
+                >
+
+                  <span class="starter-label">
+                    Write
+                  </span>
+
+                  <strong>
+                    Turn ideas into clear writing.
+                  </strong>
+
+                </button>
+
+
+                <button
+                  class="starter-card"
+                  type="button"
+                  data-prompt="Help me research a topic."
+                >
+
+                  <span class="starter-label">
+                    Research
+                  </span>
+
+                  <strong>
+                    Explore a topic and organize what matters.
+                  </strong>
+
+                </button>
+
+
+                <button
+                  class="starter-card"
+                  type="button"
+                  data-prompt="Help me plan something."
+                >
+
+                  <span class="starter-label">
+                    Plan
+                  </span>
+
+                  <strong>
+                    Build a useful plan from an idea.
+                  </strong>
+
+                </button>
+
+
+                <button
+                  class="starter-card"
+                  type="button"
+                  data-prompt="Help me create something."
+                >
+
+                  <span class="starter-label">
+                    Create
+                  </span>
+
+                  <strong>
+                    Develop concepts, projects, and new ideas.
+                  </strong>
+
+                </button>
+
+              </div>
+
             </div>
 
-            <p class="welcome-eyebrow">
-              VisionAI
-            </p>
-
-            <h1>
-              What can VisionAI help you accomplish?
-            </h1>
-
-            <p class="welcome-description">
-              Write, plan, create, research, and work across the
-              ProVision platform from one intelligent workspace.
-            </p>
+          </div>
 
 
-            <div class="starter-grid">
+
+          <!-- =========================
+               MESSAGES
+          ========================== -->
+
+          <div
+            class="messages"
+            id="messages"
+            aria-live="polite"
+          ></div>
+
+        </div>
+
+
+
+        <!-- ===============================================
+             HISTORY VIEW
+        ================================================ -->
+
+        <div
+          class="history-screen"
+          id="historyScreen"
+          hidden
+        >
+
+          <div class="history-container">
+
+            <div class="history-header">
+
+              <div>
+
+                <p class="history-eyebrow">
+                  VisionAI
+                </p>
+
+                <h1>
+                  History
+                </h1>
+
+                <p class="history-description">
+                  Continue previous conversations with VisionAI.
+                </p>
+
+              </div>
+
 
               <button
-                class="starter-card"
+                class="history-new-chat"
+                id="historyNewChatButton"
                 type="button"
-                data-prompt="Help me write something."
               >
-                <span class="starter-label">
-                  Write
+                <span>
+                  +
                 </span>
 
-                <strong>
-                  Turn ideas into clear writing.
-                </strong>
+                New chat
               </button>
 
+            </div>
+
+
+
+            <!-- =========================
+                 HISTORY LIST
+            ========================== -->
+
+            <div
+              class="history-list"
+              id="historyList"
+            ></div>
+
+
+
+            <!-- =========================
+                 EMPTY HISTORY
+            ========================== -->
+
+            <div
+              class="history-empty"
+              id="historyEmpty"
+              hidden
+            >
+
+              <div class="history-empty-icon">
+                ◷
+              </div>
+
+
+              <h2>
+                No conversations yet
+              </h2>
+
+
+              <p>
+                Chats you start with VisionAI will appear here
+                automatically.
+              </p>
+
 
               <button
-                class="starter-card"
+                class="history-empty-button"
+                id="historyEmptyButton"
                 type="button"
-                data-prompt="Help me research a topic."
               >
-                <span class="starter-label">
-                  Research
-                </span>
-
-                <strong>
-                  Explore a topic and organize what matters.
-                </strong>
-              </button>
-
-
-              <button
-                class="starter-card"
-                type="button"
-                data-prompt="Help me plan something."
-              >
-                <span class="starter-label">
-                  Plan
-                </span>
-
-                <strong>
-                  Build a useful plan from an idea.
-                </strong>
-              </button>
-
-
-              <button
-                class="starter-card"
-                type="button"
-                data-prompt="Help me create something."
-              >
-                <span class="starter-label">
-                  Create
-                </span>
-
-                <strong>
-                  Develop concepts, projects, and new ideas.
-                </strong>
+                Start a chat
               </button>
 
             </div>
@@ -379,27 +560,18 @@
 
         </div>
 
-
-
-        <!-- =========================
-             MESSAGES
-        ========================== -->
-
-        <div
-          class="messages"
-          id="messages"
-          aria-live="polite"
-        ></div>
-
       </section>
 
 
 
-      <!-- =========================
+      <!-- ===================================================
            COMPOSER
-      ========================== -->
+      ==================================================== -->
 
-      <footer class="composer-area">
+      <footer
+        class="composer-area"
+        id="composerArea"
+      >
 
         <div class="composer-wrap">
 
@@ -428,6 +600,7 @@
                 >
                   +
                 </button>
+
 
                 <span class="composer-hint">
                   VisionAI
@@ -464,23 +637,40 @@
   </div>
 
 
+
+  <!-- =====================================================
+       MOBILE SIDEBAR OVERLAY
+  ====================================================== -->
+
   <div
     class="sidebar-overlay"
     id="sidebarOverlay"
   ></div>
 
 
-<script
-  src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"
-></script>
 
-<script
-  src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"
-></script>
+  <!-- =====================================================
+       MARKDOWN
+  ====================================================== -->
 
-<script
-  src="visionai.js?v=2"
-></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+  ></script>
+
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"
+  ></script>
+
+
+
+  <!-- =====================================================
+       VISIONAI
+  ====================================================== -->
+
+  <script
+    src="visionai.js?v=3"
+  ></script>
 
 </body>
 </html>
